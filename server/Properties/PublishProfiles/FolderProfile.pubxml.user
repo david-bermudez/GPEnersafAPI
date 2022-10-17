@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+https://go.microsoft.com/fwlink/?LinkID=208121. 
+-->
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <_PublishTargetUrl>C:\Users\DAVID-PC\OneDrive\Escritorio\enersaf</_PublishTargetUrl>
+    <History>True|2022-10-10T11:39:31.0595282Z;True|2022-10-09T09:17:37.0036844-05:00;True|2022-10-09T06:23:51.1369873-05:00;True|2022-10-09T06:19:10.9566653-05:00;True|2022-10-09T00:06:22.3804777-05:00;True|2022-10-08T21:41:46.5476894-05:00;True|2022-09-30T17:37:56.3551253-05:00;</History>
+    <LastFailureDetails />
+  </PropertyGroup>
+</Project>
