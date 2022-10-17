@@ -55,16 +55,37 @@ namespace GpEnerSaf.Controllers
             return _enerSafService.GetPendingInvoiceItems(param);
         }
 
-        [HttpPost(Name = "ValidatePendingInvoice")]
-        public JObject ValidatePendingInvoice([FromBody] JObject data)
+        [HttpPost(Name = "GetErrorInvoice")]
+        public JObject GetErrorInvoice([FromBody] JObject data)
         {
             InvoiceDTO param = new InvoiceDTO();
             param.FechaFacturacion = data.GetValue("Fechafacturacion").ToString();
             param.Version = data.GetValue("Version").ToString();
             param.Factura_id = Int32.Parse(data.GetValue("Factura_id").ToString());
             param.Username = GetLoggedUser();
+            GPLiquidacion item = _enerSafService.GetInvoiceLocal(param);
+            if (item.ultimo_error != null && item.ultimo_error.Equals(""))
+            {
+                item.ultimo_error = "Factura sin inconsistencias";
+            }
+            return _enerSafService.GenerateResponse(item.ultimo_error);
+        }
 
-            return _enerSafService.ValidatePendingInvoice(param);
+        [HttpPost(Name = "ValidatePendingInvoice")]
+        public JObject ValidatePendingInvoice([FromBody] InvoiceGroupDTO data)
+        {
+            foreach (InvoiceDTO param in data.Invoices)
+            {
+                param.FechaFacturacion = param.FechaFacturacion;
+                param.Version = param.Version;
+                param.Factura_id = param.Factura_id;
+                param.Username = GetLoggedUser();
+                _enerSafService.ValidatePendingInvoice(param);
+
+                break;
+            }
+
+            return _enerSafService.GenerateResponse("Proceso terminado correctamente");
         }
 
         [HttpPost(Name = "GenerateInvoiceAcconting")]

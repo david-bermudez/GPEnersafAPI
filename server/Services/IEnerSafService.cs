@@ -29,5 +29,7 @@ namespace GpEnerSaf.Services
         InvoiceGroupDTO GetLoadedInvoices(InvoiceGroupDTO param, string v);
         void SaveLoadedInvoices(InvoiceGroupDTO data);
         void GenerateReceivableAcconting(InvoiceGroupDTO data, string username);
+
+        GPLiquidacion GetInvoiceLocal(InvoiceDTO param);
     }
 }

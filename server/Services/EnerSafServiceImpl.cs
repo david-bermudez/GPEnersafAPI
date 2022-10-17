@@ -72,6 +72,11 @@ namespace GpEnerSaf.Services
             return _gpRepository.GetPendingInvoiceLocal(param.Period, param.Status);
         }
 
+        public GPLiquidacion GetInvoiceLocal(InvoiceDTO param)
+        {
+            return _gpRepository.GetSettlementById(param.FechaFacturacion, param.Version, param.Factura_id);
+        }
+
         public List<GPLiquidacion> ReloadPendingInvoice(InvoiceDTO param)
         {
             _gpRepository.DeleteSettlementById(param.FechaFacturacion, param.Version, param.Factura_id);
@@ -86,7 +91,7 @@ namespace GpEnerSaf.Services
         {
             
             GPLiquidacion liq = _gpRepository.GetSettlementById(item.FechaFacturacion, item.Version, item.Factura_id);
-            List<GPConfiguracion> confs = GetInvoiceConfigurationDetail(liq.Cliente_nombre.Substring(0, 5).ToUpper());
+            List<GPConfiguracion> confs = GetInvoiceConfigurationDetail(liq.Cliente_nombre.ToUpper());
             confs = confs.FindAll(x => x.Tipo.Equals("CN")).ToList();
 
             DateTime processDate = DateTime.Now;

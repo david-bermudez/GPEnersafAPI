@@ -29,7 +29,9 @@ namespace GpEnerSaf.Repositories
         public List<GPLiquidacion> GetPendingInvoiceLocal(string period, int status)
         {
             List<GPLiquidacion> items = context.GPLiquidacionEntity
-                    .Where(s => s.Fechafacturacion.Substring(0, 6) == period && s.Estado == status).ToList();
+                    .Where(s => s.Fechafacturacion.Substring(0, 6) == period && s.Estado == status)
+                    .OrderBy( s=> s.Factura_id)
+                    .ToList();
             
             return items;
         }
@@ -152,7 +154,6 @@ namespace GpEnerSaf.Repositories
             liquidacion.Factor_m = row.Factor_m;
             liquidacion.V_asgcv = row.V_asgcv;
             liquidacion.Estado = 1;
-            liquidacion.V_neto_factura_ = 0;
             return liquidacion;
         }
 
@@ -241,13 +242,6 @@ namespace GpEnerSaf.Repositories
             liquidacion.Estado = estado;
             liquidacion.Error = errorMessage;
             liquidacion.Usuario = username;
-            if (row.V_neto_factura_ != null)
-            {
-                liquidacion.V_neto_factura_ = row.V_neto_factura_;
-            } else
-            {
-                liquidacion.V_neto_factura_ = 0;
-            }
             return liquidacion;
         }
 
@@ -289,6 +283,7 @@ namespace GpEnerSaf.Repositories
         public void UpdateStatus(GPLiquidacion liq, int status, string errorMessage, DateTime dateTime, string username)
         {
             liq.Estado = status;
+            liq.ultimo_error = errorMessage;
             context.GPLiquidacionEntity.Update(liq);
 
             GPLiquidacionLog log = CreateGPLiquidacionLogRow(liq, liq.Estado, errorMessage, dateTime, username);

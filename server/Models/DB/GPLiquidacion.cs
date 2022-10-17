@@ -225,7 +225,8 @@ namespace GpEnerSaf.Models.BD
         [Column("estado")]
         public int Estado {get; set; }
 
-        [Column("v_neto_factura_")]
-        public double V_neto_factura_ { get; set; }   
+        [Column("ultimo_error")]
+        public string ultimo_error { get; set; }   
+
     }
 }
