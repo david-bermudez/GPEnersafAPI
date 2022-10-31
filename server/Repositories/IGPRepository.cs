@@ -18,8 +18,9 @@ namespace GpEnerSaf.Repositories
         string getNITMunicipio(int municipio_id);
         dynamic GetLoadedInvoiceByCompany();
         public List<GPLiquidacion> GetPendingInvoiceLocalByName(string period, int status, string name);
-        double GetPreviousAmount(InvoiceDTO param);
         GPLiquidacionConcepto GetLiquidacionConceptoById(string fechafacturacion, int factura_id, string concepto);
         void UpdateLiquidacionConceptoById(List<GPLiquidacionConcepto> items);
+        GPSaldo GetPaymentDifference(string period, string description, string code);
+        void SaveSaldo(List<GPSaldo> saldoList);
     }
 }

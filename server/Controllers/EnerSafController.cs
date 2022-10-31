@@ -27,6 +27,7 @@ namespace GpEnerSaf.Controllers
         {
             InvoiceDTO param = new InvoiceDTO();
             param.Period = data.GetValue("Periodo").ToString();
+            param.Username = GetLoggedUser();
 
             return _enerSafService.GetPendingInvoice(param);
         }
@@ -95,6 +96,7 @@ namespace GpEnerSaf.Controllers
             param.FechaFacturacion = data.GetValue("Fechafacturacion").ToString();
             param.Version = data.GetValue("Version").ToString();
             param.Factura_id = Int32.Parse(data.GetValue("Factura_id").ToString());
+            param.Interfase = data.GetValue("Interfase").ToString();
             param.Username = GetLoggedUser();
 
             return _enerSafService.GenerateInvoiceAcconting(param);
@@ -127,8 +129,7 @@ namespace GpEnerSaf.Controllers
         [HttpPost(Name = "GeneratePayableAcconting")]
         public JObject GeneratePayableAcconting([FromBody] InvoiceGroupDTO data)
         {
-            _enerSafService.GenerateReceivableAcconting(data, GetLoggedUser());
-            return _enerSafService.GenerateResponse("Recaudo generado correctamente");
+            return _enerSafService.GenerateReceivableAcconting(data, GetLoggedUser());
         }
 
         [HttpPost(Name = "GetVersion")]

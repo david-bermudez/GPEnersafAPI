@@ -24,12 +24,10 @@ namespace GpEnerSaf.Services
         IEnumerable<dynamic> GetLoadedInvoiceByCompany();
         public List<GPLiquidacion> GetPendingInvoiceLocalByName(InvoiceDTO param);
         IEnumerable<Payment> GetPayments(InvoiceDTO param);
-        double GetPreviousAmount(InvoiceDTO param);
         JObject GenerateResponse(string message);
         InvoiceGroupDTO GetLoadedInvoices(InvoiceGroupDTO param, string v);
-        void SaveLoadedInvoices(InvoiceGroupDTO data);
-        void GenerateReceivableAcconting(InvoiceGroupDTO data, string username);
-
+        JObject SaveLoadedInvoices(InvoiceGroupDTO data);
+        JObject GenerateReceivableAcconting(InvoiceGroupDTO data, string username);
         GPLiquidacion GetInvoiceLocal(InvoiceDTO param);
     }
 }

@@ -27,6 +27,8 @@ namespace project.Models.DTO
 
         public string Interfase { set; get; }
 
+        public bool IsReverse { set; get; }
+
         public List<InvoiceItemDTO> detail { set; get; }
     }
 }

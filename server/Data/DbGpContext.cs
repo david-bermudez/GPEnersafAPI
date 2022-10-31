@@ -38,7 +38,7 @@ namespace GpEnerSaf.Data
             builder.Entity<GPMunicipio>()
                 .HasKey(a => new { a.Municipio });
             builder.Entity<GPSaldo>()
-                .HasKey(a => new { a.Nombre_grupo, a.Periodo });
+                .HasKey(a => new { a.Nombre_grupo, a.Periodo, a.CodigoFactura, a.CodigoIngreso });
             builder.Entity<GPLiquidacionConcepto>()
                 .HasKey(a => new { a.Fechafacturacion, a.Factura_id, a.Concepto });
         }

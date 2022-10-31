@@ -24,7 +24,7 @@ namespace GpEnerSaf.Models.BD
         public string Frontera { get; set; }
 
         [Column("factura_dian")]
-        public string Factura_dian { get; set; }
+        public int Factura_dian { get; set; }
 
         [Column("cliente_nombre")]
         public string Cliente_nombre { get; set; }

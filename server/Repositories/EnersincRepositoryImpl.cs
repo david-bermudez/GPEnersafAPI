@@ -96,7 +96,7 @@ namespace GpEnerSaf.Repositories
                 " factor_m AS \"Factor_m\", " +
                 " v_asgcv AS \"V_asgcv\" " +
                 " FROM app_ectc_gecc.reporte_liquidacion " +
-                " WHERE to_char(fechafacturacion, 'yyyymm') = '" + period + "' AND FACTURA_DIAN IS NOT NULL ";
+                " WHERE to_char(fechafacturacion, 'yyyymm') = '" + period + "' AND FACTURA_DIAN is not null ";
             return QueryList(query);
             
         }

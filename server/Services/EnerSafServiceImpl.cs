@@ -8,6 +8,7 @@ using System;
 using GpEnerSaf.Models.BD;
 using System.Linq;
 using project.Models.DTO;
+using Microsoft.OData.UriParser;
 
 namespace GpEnerSaf.Services
 {
@@ -54,7 +55,7 @@ namespace GpEnerSaf.Services
         public List<GPLiquidacion> GetPendingInvoice(InvoiceDTO param)
         {
             IEnumerable<dynamic> rows = null;
-            if (param.Period== null)
+            if (param.Period== null || param.Period.Equals(""))
             {
                 param.Period = DateTime.Now.ToString("yyyyMM");
             }
@@ -104,18 +105,26 @@ namespace GpEnerSaf.Services
                 double calculatedValue = GetCalculatedValue(liq, conf);
                 if (calculatedValue != 0)
                 {
+                    ReplaceValues(conf, liq);
                     processStatus = _safiroRepository.ValidateInvoice(liq, conf, calculatedValue);
-                    if (processStatus == null)
+                    if (processStatus != null)
                     {
-                        _gpRepository.UpdateStatus(liq, 2, "", processDate, item.Username);
-                    }
-                    else
-                    {
-                        _gpRepository.UpdateStatus(liq, 1, processStatus, processDate, item.Username);
-                        lastErrorMessage = processStatus;
+                        lastErrorMessage = "Factura: " + liq.Factura_id + " Concepto:" + conf.Concepto  + " " + processStatus;
                         foundError = foundError || true;
+                        break;
                     }
                 }
+            }
+
+            if (lastErrorMessage == null)
+            {
+                liq.Avance = "VA";
+                _gpRepository.UpdateStatus(liq, 1, "", processDate, item.Username);
+            } else
+            {
+                liq.Avance = "NA";
+                _gpRepository.UpdateStatus(liq, 1, lastErrorMessage, processDate, item.Username);
+
             }
 
             return GenerateResponse(lastErrorMessage);
@@ -127,8 +136,13 @@ namespace GpEnerSaf.Services
             sql = sql.Replace("{fechafacturacion}", liq.Fechafacturacion);
             sql = sql.Replace("{version}", liq.Version);
             sql = sql.Replace("{factura_id}", liq.Factura_id.ToString());
-
-            return _gpRepository.GetCalculatedValue(sql);
+            try
+            {
+                return _gpRepository.GetCalculatedValue(sql);
+            } catch (Exception)
+            {
+                return 0;
+            }
         }
 
         /**
@@ -173,41 +187,99 @@ namespace GpEnerSaf.Services
             string processStatus = null;
             string lastErrorMessage = null;
             bool foundError = false;
+            int actualProgress = GetProgressNumber(liq.Avance);
+            int validateProgress = GetProgressNumber(param.Interfase);
 
-            foreach (GPConfiguracion conf in confs)
+            if (validateProgress == actualProgress + 1)
             {
-                double calculatedValue = GetCalculatedValue(liq, conf);
-                if (calculatedValue != 0) {
-                    ReplaceValues(conf, liq);
-                    processStatus = _safiroRepository.GenerateInvoiceAcconting(liq, conf, calculatedValue);
-
+                foreach (GPConfiguracion conf in confs)
+                {
+                    double calculatedValue = GetCalculatedValue(liq, conf);
+                    if (calculatedValue != 0)
+                    {
+                        ReplaceValues(conf, liq);
+                        processStatus = _safiroRepository.GenerateInvoiceAcconting(liq, conf, calculatedValue);
+                        if (processStatus != null)
+                        {
+                            lastErrorMessage = "Factura: " + liq.Factura_id + " Concepto: " + conf.Concepto + processStatus;
+                            break;
+                        }
+                    }
                 }
-            }
 
-            if (processStatus == null)
+                if (processStatus == null)
+                {
+                    liq.Avance = param.Interfase;
+                    
+                    if (liq.Avance.Equals("PP"))
+                    {
+                        _gpRepository.UpdateStatus(liq, 2, "", dateTime, param.Username);
+                    } else
+                    {
+                        _gpRepository.UpdateStatus(liq, 1, "", dateTime, param.Username);
+                    }
+                }
+                else
+                {
+                    liq.ultimo_error = lastErrorMessage;
+                    _gpRepository.UpdateStatus(liq, 1, lastErrorMessage, dateTime, param.Username);
+                    foundError = foundError || true;
+                }
+
+                //No se encontro con configuracion
+                if (confs.Count == 0)
+                {
+                    processStatus = "No existe parametrizacion para el cliente " + liq.Cliente_nombre;
+                }
+
+                return GenerateResponse(lastErrorMessage);
+            } else
             {
-                _gpRepository.UpdateStatus(liq, 3, "", dateTime, param.Username);
+                return GenerateResponse("No es posible usar esta accion");
+            }
+            
+        }
+
+        private int GetProgressNumber(string progress)
+        {
+            if (progress == null )
+            {
+                return 0;
+            }
+            else if (progress.Equals("CP"))
+            {
+                return 1;
+            } 
+            else if (progress.Equals("CN"))
+            {
+                return 2;
+            }
+            else if (progress.Equals("IM"))
+            {
+                return 3;
+            }
+            else if (progress.Equals("PPI"))
+            {
+                return 4;
+            }
+            else if (progress.Equals("PPE"))
+            {
+                return 5;
+            }
+            else if (progress.Equals("VA"))
+            {
+                return 1;
             }
             else
             {
-                _gpRepository.UpdateStatus(liq, 2, processStatus, dateTime, param.Username);
-                lastErrorMessage = processStatus;
-                foundError = foundError || true;
+                return 0;
             }
-
-            //No se encontro con configuracion
-            if (confs.Count == 0)
-            {
-                processStatus = "No existe parametrizacion para el cliente " + liq.Cliente_nombre;
-            }
-
-            return GenerateResponse(lastErrorMessage);
         }
 
         private void ReplaceValues(GPConfiguracion conf, GPLiquidacion liq)
         {
             //PARAM ID_MUNICIPIO
-            if (conf.Codniva2 != null && conf.Codniva1.Contains("{ID_MUNICIPIO}"))
+            if (conf.Codniva1 != null && conf.Codniva1.Contains("{ID_MUNICIPIO}"))
             {
                 conf.Codniva1 = _gpRepository.getNITMunicipio(Int32.Parse(liq.Municipio_id));
             }
@@ -221,7 +293,7 @@ namespace GpEnerSaf.Services
             }
 
             //PARAM YEAR
-            string actualYear = DateTime.Now.ToString("YYYY");
+            string actualYear = DateTime.Now.Year.ToString();
             if (conf.Codniva1 != null && conf.Codniva1.Contains("{YEAR}"))
             {
                 conf.Codniva1 = actualYear;
@@ -272,12 +344,26 @@ namespace GpEnerSaf.Services
 
         public IEnumerable<Payment> GetPayments(InvoiceDTO param)
         {
-            return _safiroRepository.GetPayments(param.Period, param.Description);
-        }
+            List<Payment> list = _safiroRepository.GetPayments(param.Period, param.Description);
 
-        public double GetPreviousAmount(InvoiceDTO param)
-        {
-            return _gpRepository.GetPreviousAmount(param);
+            foreach (Payment payment in list)
+            {
+                GPSaldo saldo= _gpRepository.GetPaymentDifference(param.Period, param.Description, payment.Code);
+                if (saldo != null )
+                {
+                    payment.PaymentValue = saldo.difference;
+                    /*if (saldo.difference >= 0)
+                    {
+                        payment.PaymentValue = saldo.difference;
+                    }
+                    else
+                    {
+                        payment.PaymentValue = 0;
+                    }*/
+                }
+            }
+
+            return list;
         }
 
         public List<GPConfiguracion> GetInvoiceConfigurationDetail(string name)
@@ -286,16 +372,45 @@ namespace GpEnerSaf.Services
             return confs;
         }
 
-        public void GenerateReceivableAcconting(InvoiceGroupDTO data, string username)
+        public JObject GenerateReceivableAcconting(InvoiceGroupDTO data, string username)
         {
+            Payment totalPayment = null;
+            List<GPSaldo> saldoList = new List<GPSaldo>();
             DateTime dateTime = DateTime.Now;
             string processStatus = null;
             string lastErrorMessage = null;
+            double totalInvoiceDetail = 0;
+            double totalInvoiceDetailReal = 0;
             bool foundError = false;
 
+            if (data.Payments == null)
+            {
+                return GenerateResponse("No hay pagos seleccionados");
+            }
+
+            //Solo se envia un pago
+            foreach (Payment payment in data.Payments)
+            {
+                //data.Period, data.GroupName, payment.Code
+                InvoiceDTO invoiceDTO = new InvoiceDTO();
+                invoiceDTO.Period = data.Invoices[0].FechaFacturacion.Substring(0,6);
+                invoiceDTO.Description = data.GroupName;
+
+                totalPayment = GetPayments(invoiceDTO).Where(s => s.Code.Equals(payment.Code)).FirstOrDefault();
+            }
+
+            totalInvoiceDetail = data.Invoices.Sum(s => s.detail.Sum(d => d.SuggestedValue));
+            totalInvoiceDetailReal = data.Invoices.Sum(s => s.detail.Sum(d => d.Value));
+
+            if (totalInvoiceDetail != totalPayment.PaymentValue)
+            {
+                return GenerateResponse("El monto de los items seleccionado no es igual al pago seleccionado.");
+            }
+
             foreach (InvoiceDTO invoice in data.Invoices) {
+
                 GPLiquidacion liq = _gpRepository.GetSettlementById(invoice.FechaFacturacion, invoice.Version, invoice.Factura_id);
-                List<GPConfiguracion> confs = GetInvoiceConfigurationDetail(liq.Cliente_nombre);
+                List<GPConfiguracion> confs = GetInvoiceConfigurationDetail(liq.Cliente_nombre).Where(s => s.Tipo.Equals("RE") || s.Tipo.Equals("RP")).ToList();
                 confs.Sort((a, b) => a.Sort_order.CompareTo(b.Sort_order));
 
                 foreach (GPConfiguracion conf in confs)
@@ -304,22 +419,55 @@ namespace GpEnerSaf.Services
                     if (calculatedValue != 0)
                     {
                         ReplaceValues(conf, liq);
+                        conf.Numdocso = totalPayment.Consecutive;
                         processStatus = _safiroRepository.GeneratePayableAcconting(liq, conf, calculatedValue);
+
+                        if (processStatus == null)
+                        {
+                            if (totalPayment.PaymentValue < totalInvoiceDetailReal)
+                            {
+                                _gpRepository.UpdateStatus(liq, 2, "", dateTime, username);
+                            }
+                            else
+                            {
+                                _gpRepository.UpdateStatus(liq, 3, "", dateTime, username);
+                            }
+                        }
+                        else
+                        {
+                            _gpRepository.UpdateStatus(liq, 2, processStatus, dateTime, username);
+                            lastErrorMessage = processStatus;
+                            foundError = foundError || true;
+                            return GenerateResponse(lastErrorMessage);
+                        }
                     }
                 }
 
-                if (processStatus == null)
-                {
-                    _gpRepository.UpdateStatus(liq, 4, "", dateTime, username);
-                }
-                else
-                {
-                    _gpRepository.UpdateStatus(liq, 3, processStatus, dateTime, username);
-                    lastErrorMessage = processStatus;
-                    foundError = foundError || true;
-                }
+                saldoList.Add(CreateGPSaldo(invoice, totalPayment, data.GroupName));
             }
+            saldoList.ForEach(s => s.difference = totalPayment.PaymentValue - totalInvoiceDetailReal);
 
+            SaveGPSaldo(saldoList);
+            return GenerateResponse("Datos guardados correctamente");
+
+        }   
+        
+        private GPSaldo CreateGPSaldo(InvoiceDTO invoice, Payment payment, string groupName)
+        {
+            GPSaldo saldo = new GPSaldo();
+            saldo.Periodo = invoice.FechaFacturacion.Substring(0, 6);
+            saldo.ValorFactura = invoice.detail.Sum(s => s.Value);
+            saldo.CodigoFactura = invoice.Factura_id;
+            saldo.ValorIngreso = payment.PaymentValue;
+            saldo.CodigoIngreso = payment.Code;
+            saldo.Nombre_grupo = groupName;
+
+            return saldo;
+        }
+
+        private void SaveGPSaldo(List<GPSaldo> saldoList)
+        {
+            _gpRepository.SaveSaldo(saldoList);
         }
 
         public InvoiceGroupDTO GetLoadedInvoices(InvoiceGroupDTO paramGroup, string username)
@@ -337,12 +485,11 @@ namespace GpEnerSaf.Services
 
             double totalPayments = 0;
             double totalInvoices = 0;
-            double previousAmount = GetPreviousAmount(paramInvoice);
-            invoiceGroupDTO.PendingAmount = previousAmount;
 
             //Se obtiene el total de pagos realizados por el cliente
             foreach (string group_id in paramGroup.GroupName.Split(","))
             {
+                paramInvoice.Description = group_id;
                 invoiceGroupDTO.Payments.AddRange(GetPayments(paramInvoice));
                 totalPayments += invoiceGroupDTO.Payments.Sum(s => s.PaymentValue);
             }
@@ -351,7 +498,7 @@ namespace GpEnerSaf.Services
             //Se obtiene el total de los montos a recaudar
             foreach (string group_id in paramGroup.GroupName.Split(","))
             {
-                paramInvoice.Status = 3;
+                paramInvoice.Status = 2;
                 paramInvoice.Description = group_id;
                 List<GPLiquidacion> gPLiquidacions = GetPendingInvoiceLocalByName(paramInvoice);
                 foreach (GPLiquidacion item in gPLiquidacions)
@@ -361,7 +508,7 @@ namespace GpEnerSaf.Services
                     invoice.FechaFacturacion = item.Fechafacturacion;
                     invoice.Version = item.Version;
 
-                    invoice.Description = item.Frontera + " - " + item.Municipio_nombre;
+                    invoice.Description = "Factura: " + item.Factura_dian + " Version: " + item.Version + " - Frontera:" + item.Frontera + " - " + item.Municipio_nombre ;
                     invoice.detail = new List<InvoiceItemDTO>();
 
                     List<GPConfiguracion> items = GetInvoiceConfigurationDetail(item.Cliente_nombre)
@@ -376,6 +523,7 @@ namespace GpEnerSaf.Services
                         {
                             double calculatedValue = GetCalculatedValue(item, config);
                             GPLiquidacionConcepto gPLiquidacionConcepto = _gpRepository.GetLiquidacionConceptoById(item.Fechafacturacion, item.Factura_id, config.Concepto);
+                            totalInvoices = totalInvoices + calculatedValue;
                             itemDetailDTO.Value = calculatedValue;
                             
                             if (gPLiquidacionConcepto != null )
@@ -406,12 +554,28 @@ namespace GpEnerSaf.Services
             }
             invoiceGroupDTO.TotalInvoice = totalInvoices;
             invoiceGroupDTO.Difference = totalPayments - totalInvoices;
-
+            invoiceGroupDTO.GroupName = paramGroup.GroupName;
             return invoiceGroupDTO;
         }
 
-        public void SaveLoadedInvoices(InvoiceGroupDTO data)
+        public JObject SaveLoadedInvoices(InvoiceGroupDTO data)
         {
+            InvoiceDTO paramInvoice = new InvoiceDTO();
+            paramInvoice.Description = data.GroupName;
+            paramInvoice.Period = data.Period;
+            //paramInvoice.Username = Getlo;
+
+            double totalInvoice = 0;
+            double totalInvoicesModified = 0;
+
+            totalInvoicesModified = data.Invoices.Sum(s => s.detail.Sum(x => x.SuggestedValue) );
+            totalInvoice = data.Invoices.Sum(s => s.detail.Sum(x => x.Value));
+
+            if (totalInvoicesModified > totalInvoice)
+            {
+                return GenerateResponse("Las modificaciones no puede superar el monto de la factura");
+            }
+
             List<GPLiquidacionConcepto> items = new List<GPLiquidacionConcepto>();
             foreach (InvoiceDTO invoice in data.Invoices)
             {
@@ -429,6 +593,8 @@ namespace GpEnerSaf.Services
             }
 
             _gpRepository.UpdateLiquidacionConceptoById(items);
+
+            return GenerateResponse("Proceso finalizado correctamente");
         }
 
     }

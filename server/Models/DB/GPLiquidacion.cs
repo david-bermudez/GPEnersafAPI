@@ -11,7 +11,7 @@ namespace GpEnerSaf.Models.BD
         [Required]
         [Column("fechafacturacion")]
         public string Fechafacturacion { get; set; }
-        [Required]
+        
         [Column("version")]
         public string Version { get; set; }
         [Required]
@@ -22,7 +22,7 @@ namespace GpEnerSaf.Models.BD
         public string Frontera { get; set; }
 
         [Column("factura_dian")]
-        public string Factura_dian { get; set; }
+        public int Factura_dian { get; set; }
 
         [Column("cliente_nombre")]
         public string Cliente_nombre { get; set; }
@@ -226,7 +226,10 @@ namespace GpEnerSaf.Models.BD
         public int Estado {get; set; }
 
         [Column("ultimo_error")]
-        public string ultimo_error { get; set; }   
+        public string ultimo_error { get; set; }
+
+        [Column("avance")]
+        public string Avance { get; set; }
 
     }
 }

@@ -4,6 +4,8 @@ using GpEnerSaf.Models;
 using GpEnerSaf.Models.BD;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Microsoft.OData.Edm;
 using Npgsql;
 using Oracle.ManagedDataAccess.Client;
 using project.Models.DTO;
@@ -84,7 +86,7 @@ namespace GpEnerSaf.Repositories
                 "end; ";
 
             Dictionary<string, object> result;
-            List<OracleParameter> list = CreateInvoiceParamOracle(liquidacion, conf, calculatedValue, "");
+            List<OracleParameter> list = CreateInvoiceParamOracle(liquidacion, conf, Math.Round( calculatedValue ), "");
             result = ExecuteStoreProcedure(anonymous_block, list);
             if (!result["48"].ToString().Equals("null"))
             {
@@ -117,7 +119,12 @@ namespace GpEnerSaf.Repositories
             }
 
             //REGISTRO DE MOVIMIENTOS DE PRESUPUESTO
-            if (confs.Tipo.Equals("PP"))
+            if (confs.Tipo.Equals("PPI"))
+            {
+                result = generateInvoiceBudgetAccounting(liquidacion, confs, calculatedValue);
+            }
+
+            if (confs.Tipo.Equals("PPE"))
             {
                 result = generateInvoiceBudgetAccounting(liquidacion, confs, calculatedValue);
             }
@@ -201,7 +208,7 @@ namespace GpEnerSaf.Repositories
             Dictionary<string, object> result;
             List<OracleParameter> list = CreateInvoiceParamOracle(liquidacion, confs, calculatedValue ,"");
             result = ExecuteStoreProcedure(anonymous_block, list);
-            if (!result["48"].ToString().Equals("null"))
+            if (!result["47"].ToString().Equals("0"))
             {
                 return "Error " + result["47"].ToString() + " - " + result["48"].ToString();
             }
@@ -267,12 +274,10 @@ namespace GpEnerSaf.Repositories
                "end; ";
 
             Dictionary<string, object> result;
-            DateTime previousMonth = DateTime.ParseExact(liquidacion.Fechafacturacion, "yyyyMMdd",CultureInfo.InvariantCulture);
-            liquidacion.Fechafacturacion = previousMonth.AddMonths(-1).Date.ToString("yyyyMM") + "30";
 
-            List<OracleParameter> list = CreateInvoiceParamOracle(liquidacion, confs, calculatedValue, "PROVISION ");
+            List<OracleParameter> list = CreateInvoiceParamOracle(liquidacion, confs, calculatedValue, "PROVISION");
             result = ExecuteStoreProcedure(anonymous_block, list);
-            if (result["48"] != null)
+            if (!result["47"].ToString().Equals("0"))
             {
                 return "Error " + result["47"].ToString() + " - " + result["48"].ToString();
             }
@@ -291,7 +296,7 @@ namespace GpEnerSaf.Repositories
             Dictionary<string, object> result;
             List<OracleParameter> list = CreateTaxParamOracle(liquidacion, confs, calculatedValue);
             result = ExecuteStoreProcedure(anonymous_block, list);
-            if (result["17"] != null)
+            if (!result["16"].ToString().Equals(""))
             {
                 return "Error " + result["16"].ToString() + " - " + result["17"].ToString();
             }
@@ -307,15 +312,15 @@ namespace GpEnerSaf.Repositories
                 "begin " +
                 "  id_trx := sfps001q.fnuObtenerSecuenciaTransaccion(); " +
                 "  Sfps001q.proGenerarejecIngresosPresup( " +
-                "    :1, id_trx , :2,:3,:4,:5,:6,:7,:8,:9,:10,:11,:12,:13,:14,:15,:16,:17,:18,:19,:20,:21,:22,:23,:24,:25,:26,:27); " +
+                "    :1, id_trx , :2,:3,TO_DATE(:4,'YYYYMMDD'),:5,:6,:7,:8,:9,:10,:11,:12,:13,:14,:15,:16,:17,:18,:19,:20,:21,:22,:23,:24,SYSDATE,:26,:27); " +
                 "end; ";
 
             Dictionary<string, object> result;
             List<OracleParameter> list = CreateBudgetParamOracle(liquidacion, confs, calculatedValue);
             result = ExecuteStoreProcedure(anonymous_block, list);
-            if (result["27"] != null)
+            if (!result["26"].ToString().Equals("0"))
             {
-                return "Error " + result["26"].ToString() + " - " + result["27"].ToString();
+                return "Error " + result["25"].ToString() + " - " + result["26"].ToString();
             }
 
             return null;
@@ -372,16 +377,27 @@ namespace GpEnerSaf.Repositories
 
         private List<OracleParameter> CreateInvoiceParamOracle(GPLiquidacion liquidacion, GPConfiguracion conf, double calculatedValue, string prefix) {
 
-            string a = liquidacion.Fechafacturacion.Substring(0, 4);
-            string b = Int32.Parse(liquidacion.Fechafacturacion.Substring(4, 2)).ToString();
+            string Fechafacturacion = liquidacion.Fechafacturacion;
+            string Factura_dian = liquidacion.Factura_dian.ToString();
+            if (prefix.StartsWith("PROVISION"))
+            {
+                DateTime previousMonth = DateTime.ParseExact(liquidacion.Fechafacturacion, "yyyyMMdd", CultureInfo.InvariantCulture);
+                Fechafacturacion = previousMonth.AddMonths(-1).Date.ToString("yyyyMM") + "30";
+                Factura_dian = "01";
+            }
+
+            if (conf.Tipo.Equals("RE"))
+            {
+                Factura_dian = conf.Numdocso;
+            }
             OracleParameter p1 = new OracleParameter("1", OracleDbType.Varchar2, conf.Codsucur, ParameterDirection.Input);
-            OracleParameter p2 = new OracleParameter("2", OracleDbType.Varchar2, liquidacion.Fechafacturacion.Substring(0,4), ParameterDirection.Input);
-            OracleParameter p3 = new OracleParameter("3", OracleDbType.Varchar2, Int32.Parse(liquidacion.Fechafacturacion.Substring(4, 2)).ToString(), ParameterDirection.Input);
-            OracleParameter p4 = new OracleParameter("4", OracleDbType.Date, DateTime.ParseExact(liquidacion.Fechafacturacion, "yyyyMMdd",CultureInfo.InvariantCulture), ParameterDirection.Input);
+            OracleParameter p2 = new OracleParameter("2", OracleDbType.Varchar2, Fechafacturacion.Substring(0,4), ParameterDirection.Input);
+            OracleParameter p3 = new OracleParameter("3", OracleDbType.Varchar2, Int32.Parse(Fechafacturacion.Substring(4, 2)).ToString(), ParameterDirection.Input);
+            OracleParameter p4 = new OracleParameter("4", OracleDbType.Date, DateTime.ParseExact(Fechafacturacion, "yyyyMMdd",CultureInfo.InvariantCulture), ParameterDirection.Input);
             OracleParameter p5 = new OracleParameter("5", OracleDbType.Varchar2, conf.Codtipfu, ParameterDirection.Input);
             OracleParameter p6 = new OracleParameter("6", OracleDbType.Varchar2, conf.Numtipfu, ParameterDirection.Input);
             OracleParameter p7 = new OracleParameter("7", OracleDbType.Varchar2, conf.Codtipdc, ParameterDirection.Input);
-            OracleParameter p8 = new OracleParameter("8", OracleDbType.Varchar2, liquidacion.Factura_dian, ParameterDirection.Input);
+            OracleParameter p8 = new OracleParameter("8", OracleDbType.Varchar2, Factura_dian, ParameterDirection.Input);
             OracleParameter p9 = new OracleParameter("9", OracleDbType.Varchar2, conf.Codlibro, ParameterDirection.Input);
             OracleParameter p10 = new OracleParameter("10", OracleDbType.Varchar2, conf.Esquemat, ParameterDirection.Input);
             OracleParameter p11 = new OracleParameter("11", OracleDbType.Varchar2, conf.Codctaco, ParameterDirection.Input);
@@ -411,12 +427,25 @@ namespace GpEnerSaf.Repositories
                 p27.Value = "D";
             }
 
+            //Cuando es una Reversion de Factura
+            if (!liquidacion.Tipo_factura.ToLower().Equals("factura"))
+            {
+                if (conf.Tipo_asiento.Equals("D") && calculatedValue < 0)
+                {
+                    p27.Value = "D";
+                }
+                if (conf.Tipo_asiento.Equals("C") && calculatedValue < 0)
+                {
+                    p27.Value = "C";
+                }
+            }
+
             OracleParameter p28 = new OracleParameter("28", OracleDbType.Double, null, ParameterDirection.Input);
             OracleParameter p29 = new OracleParameter("29", OracleDbType.Double, null, ParameterDirection.Input);
             OracleParameter p30 = new OracleParameter("30", OracleDbType.Varchar2, null, ParameterDirection.Input);
             OracleParameter p31 = new OracleParameter("31", OracleDbType.Date, null, ParameterDirection.Input);
             OracleParameter p32 = new OracleParameter("32", OracleDbType.Varchar2, null, ParameterDirection.Input);
-            OracleParameter p33 = new OracleParameter("33", OracleDbType.Varchar2, null, ParameterDirection.Input);//PENDIENTE
+            OracleParameter p33 = new OracleParameter("33", OracleDbType.Varchar2, null, ParameterDirection.Input);
             OracleParameter p34 = new OracleParameter("34", OracleDbType.Date, null, ParameterDirection.Input);
             OracleParameter p35 = new OracleParameter("35", OracleDbType.Double, null, ParameterDirection.Input);
             OracleParameter p36 = new OracleParameter("36", OracleDbType.Double, null, ParameterDirection.Input);
@@ -447,14 +476,14 @@ namespace GpEnerSaf.Repositories
 
         private List<OracleParameter> CreateTaxParamOracle(GPLiquidacion liquidacion, GPConfiguracion conf, double calculatedValue)
         {
-
+            double d = calculatedValue * double.Parse(conf.Codniva1);
             OracleParameter p1 = new OracleParameter("1", OracleDbType.Varchar2, "GC", ParameterDirection.Input);
-            OracleParameter p2 = new OracleParameter("2", OracleDbType.Varchar2, conf.Codniva2, ParameterDirection.Input);
+            OracleParameter p2 = new OracleParameter("2", OracleDbType.Varchar2, conf.Codctaco, ParameterDirection.Input);
             OracleParameter p3 = new OracleParameter("3", OracleDbType.Varchar2, "C", ParameterDirection.Input);
-            OracleParameter p4 = new OracleParameter("4", OracleDbType.Double, calculatedValue * double.Parse(conf.Nivanal1), ParameterDirection.Input);
+            OracleParameter p4 = new OracleParameter("4", OracleDbType.Double, calculatedValue * double.Parse(conf.Codniva1) , ParameterDirection.Input);
             OracleParameter p5 = new OracleParameter("5", OracleDbType.Date, DateTime.ParseExact(liquidacion.Fechafacturacion, "yyyyMMdd", CultureInfo.InvariantCulture), ParameterDirection.Input);
             OracleParameter p6 = new OracleParameter("6", OracleDbType.Double, calculatedValue, ParameterDirection.Input);
-            OracleParameter p7 = new OracleParameter("7", OracleDbType.Double, double.Parse(conf.Nivanal1), ParameterDirection.Input);
+            OracleParameter p7 = new OracleParameter("7", OracleDbType.Double, double.Parse(conf.Codniva1), ParameterDirection.Input);
             OracleParameter p8 = new OracleParameter("8", OracleDbType.Varchar2, conf.Codniva2, ParameterDirection.Input);
             OracleParameter p9 = new OracleParameter("9", OracleDbType.Varchar2, null , ParameterDirection.Input);
             OracleParameter p10 = new OracleParameter("10", OracleDbType.Varchar2, "FCTVNT", ParameterDirection.Input);
@@ -464,8 +493,8 @@ namespace GpEnerSaf.Repositories
             OracleParameter p14 = new OracleParameter("14", OracleDbType.Varchar2, "INTERFAZ", ParameterDirection.Input);
             OracleParameter p15 = new OracleParameter("15", OracleDbType.Date, DateTime.Now, ParameterDirection.Input);
 
-            OracleParameter p16 = new OracleParameter("46", OracleDbType.Varchar2, ParameterDirection.Output);
-            OracleParameter p17 = new OracleParameter("47", OracleDbType.Decimal, ParameterDirection.Output);
+            OracleParameter p16 = new OracleParameter("16", OracleDbType.Varchar2, ParameterDirection.Output);
+            OracleParameter p17 = new OracleParameter("17", OracleDbType.Decimal, ParameterDirection.Output);
 
             List<OracleParameter> list = new List<OracleParameter>();
             list.Add(p1); list.Add(p2); list.Add(p3); list.Add(p4); list.Add(p5); list.Add(p6); list.Add(p7); list.Add(p8); list.Add(p9); list.Add(p10);
@@ -477,74 +506,69 @@ namespace GpEnerSaf.Repositories
 
         private List<OracleParameter> CreateBudgetParamOracle(GPLiquidacion liquidacion, GPConfiguracion conf, double calculatedValue)
         {
-
-            OracleParameter p1 = new OracleParameter("1", OracleDbType.Varchar2, conf.Codigo, ParameterDirection.Input);
-            OracleParameter p2 = new OracleParameter("2", OracleDbType.Varchar2, liquidacion.Fechafacturacion.Substring(0, 4), ParameterDirection.Input);
-            OracleParameter p3 = new OracleParameter("3", OracleDbType.Varchar2, liquidacion.Fechafacturacion.Substring(4, 2), ParameterDirection.Input);
-            OracleParameter p4 = new OracleParameter("4", OracleDbType.Date, DateTime.ParseExact(liquidacion.Fechafacturacion, "yyyyMMdd", CultureInfo.InvariantCulture), ParameterDirection.Input);
-            OracleParameter p5 = new OracleParameter("5", OracleDbType.Varchar2, conf.Codtipfu, ParameterDirection.Input);
-            OracleParameter p6 = new OracleParameter("6", OracleDbType.Varchar2, conf.Numtipfu, ParameterDirection.Input);
-            OracleParameter p7 = new OracleParameter("7", OracleDbType.Varchar2, conf.Codtipdc, ParameterDirection.Input);
-            OracleParameter p8 = new OracleParameter("8", OracleDbType.Varchar2, null, ParameterDirection.Input);
-            OracleParameter p9 = new OracleParameter("9", OracleDbType.Varchar2, conf.Codlibro, ParameterDirection.Input);
-            OracleParameter p10 = new OracleParameter("10", OracleDbType.Varchar2, conf.Esquemat, ParameterDirection.Input);
-            OracleParameter p11 = new OracleParameter("11", OracleDbType.Varchar2, conf.Codctaco, ParameterDirection.Input);
-            OracleParameter p12 = new OracleParameter("12", OracleDbType.Varchar2, conf.Nivanal1, ParameterDirection.Input);
-            OracleParameter p13 = new OracleParameter("13", OracleDbType.Varchar2, conf.Codniva1, ParameterDirection.Input);
-            OracleParameter p14 = new OracleParameter("14", OracleDbType.Varchar2, conf.Nivanal2, ParameterDirection.Input);
-            OracleParameter p15 = new OracleParameter("15", OracleDbType.Varchar2, conf.Codniva2, ParameterDirection.Input);
-            OracleParameter p16 = new OracleParameter("16", OracleDbType.Varchar2, conf.Nivanal3, ParameterDirection.Input);
-            OracleParameter p17 = new OracleParameter("17", OracleDbType.Varchar2, conf.Codniva3, ParameterDirection.Input);
-            OracleParameter p18 = new OracleParameter("18", OracleDbType.Varchar2, null, ParameterDirection.Input);
-            OracleParameter p19 = new OracleParameter("19", OracleDbType.Varchar2, null, ParameterDirection.Input);
-            OracleParameter p20 = new OracleParameter("20", OracleDbType.Varchar2, null, ParameterDirection.Input);
-            OracleParameter p21 = new OracleParameter("21", OracleDbType.Varchar2, null, ParameterDirection.Input);
-            OracleParameter p22 = new OracleParameter("22", OracleDbType.Varchar2, conf.Concepto + " - PERIODO " + liquidacion.Fechafacturacion.Substring(0, 6), ParameterDirection.Input);
-            OracleParameter p23 = new OracleParameter("23", OracleDbType.Double, Math.Abs(calculatedValue), ParameterDirection.Input);
-            OracleParameter p24 = new OracleParameter("24", OracleDbType.Double, 0, ParameterDirection.Input);
-            OracleParameter p25 = new OracleParameter("25", OracleDbType.Double, 0, ParameterDirection.Input);
-            OracleParameter p26 = new OracleParameter("26", OracleDbType.Varchar2, conf.Tipo_moneda, ParameterDirection.Input);
-
-            OracleParameter p27 = new OracleParameter("27", OracleDbType.Varchar2, conf.Tipo_asiento, ParameterDirection.Input);
-            if (conf.Tipo_asiento.Equals("D") && calculatedValue < 0)
+            string codoperPositive = "";
+            string codoperNegative = "";
+            if (conf.Tipo.Equals("PP"))
             {
-                p27.Value = "C";
-            }
-            if (conf.Tipo_asiento.Equals("C") && calculatedValue < 0)
+                codoperPositive = "518";
+                codoperNegative = "519";
+            } 
+            else if (conf.Tipo.Equals("RP")) 
             {
-                p27.Value = "D";
+                codoperPositive = "518";
+                codoperNegative = "519";
             }
 
-            OracleParameter p28 = new OracleParameter("28", OracleDbType.Double, 0, ParameterDirection.Input);
-            OracleParameter p29 = new OracleParameter("29", OracleDbType.Double, 0, ParameterDirection.Input);
-            OracleParameter p30 = new OracleParameter("30", OracleDbType.Varchar2, null, ParameterDirection.Input);
-            OracleParameter p31 = new OracleParameter("31", OracleDbType.Date, null, ParameterDirection.Input);
-            OracleParameter p32 = new OracleParameter("32", OracleDbType.Varchar2, null, ParameterDirection.Input);
-            OracleParameter p33 = new OracleParameter("33", OracleDbType.Varchar2, null, ParameterDirection.Input);//PENDIENTE
-            OracleParameter p34 = new OracleParameter("34", OracleDbType.Date, null, ParameterDirection.Input);
-            OracleParameter p35 = new OracleParameter("35", OracleDbType.Double, null, ParameterDirection.Input);
-            OracleParameter p36 = new OracleParameter("36", OracleDbType.Double, null, ParameterDirection.Input);
-            OracleParameter p37 = new OracleParameter("37", OracleDbType.Varchar2, "G", ParameterDirection.Input);
-            OracleParameter p38 = new OracleParameter("38", OracleDbType.Varchar2, null, ParameterDirection.Input);
-            OracleParameter p39 = new OracleParameter("39", OracleDbType.Varchar2, null, ParameterDirection.Input);
-            OracleParameter p40 = new OracleParameter("40", OracleDbType.Varchar2, "ENERSINC", ParameterDirection.Input);
-            OracleParameter p41 = new OracleParameter("41", OracleDbType.Varchar2, "FACTURACION", ParameterDirection.Input);
-            OracleParameter p42 = new OracleParameter("42", OracleDbType.Date, DateTime.Now, ParameterDirection.Input);
-            OracleParameter p43 = new OracleParameter("43", OracleDbType.Varchar2, "INTERFAZ", ParameterDirection.Input);
-            OracleParameter p44 = new OracleParameter("44", OracleDbType.Date, null, ParameterDirection.Input);
-            OracleParameter p45 = new OracleParameter("45", OracleDbType.Varchar2, null, ParameterDirection.Input);
-            OracleParameter p46 = new OracleParameter("46", OracleDbType.Varchar2, null, ParameterDirection.Input);
 
-            OracleParameter p47 = new OracleParameter("47", OracleDbType.Decimal, ParameterDirection.Output);
-            OracleParameter p48 = new OracleParameter("48", OracleDbType.Varchar2, ParameterDirection.Output);
+            OracleParameter p1 = new OracleParameter("1", OracleDbType.Varchar2, "GC", ParameterDirection.Input);
+            OracleParameter p2 = new OracleParameter("2", OracleDbType.Varchar2, conf.Tipo_asiento, ParameterDirection.Input);
+            OracleParameter p3 = new OracleParameter("3", OracleDbType.Varchar2, liquidacion.Fechafacturacion.Substring(0, 4), ParameterDirection.Input);
+            OracleParameter p4 = new OracleParameter("4", OracleDbType.Varchar2, liquidacion.Fechafacturacion, ParameterDirection.Input);
+            OracleParameter p5 = new OracleParameter("5", OracleDbType.Varchar2, conf.Codcompr, ParameterDirection.Input);
+            OracleParameter p6 = new OracleParameter("6", OracleDbType.Varchar2, conf.Codopepr, ParameterDirection.Input);
+            if (conf.Codopepr == null && calculatedValue > 0)
+            {
+                p6.Value = codoperPositive;
+            }
+            if (conf.Codopepr == null && calculatedValue < 0)
+            {
+                p6.Value = codoperNegative;
+            }
+
+            OracleParameter p7 = new OracleParameter("7", OracleDbType.Varchar2, conf.Codctaco, ParameterDirection.Input);
+            OracleParameter p8 = new OracleParameter("8", OracleDbType.Varchar2, conf.Nivanal1, ParameterDirection.Input);
+            OracleParameter p9 = new OracleParameter("9", OracleDbType.Varchar2, conf.Codniva1, ParameterDirection.Input);
+            OracleParameter p10 = new OracleParameter("10", OracleDbType.Varchar2, conf.Nivanal2, ParameterDirection.Input);
+            OracleParameter p11 = new OracleParameter("11", OracleDbType.Varchar2, conf.Codniva2, ParameterDirection.Input);
+            OracleParameter p12 = new OracleParameter("12", OracleDbType.Varchar2, conf.Nivanal3, ParameterDirection.Input);
+            OracleParameter p13 = new OracleParameter("13", OracleDbType.Varchar2, conf.Codniva3, ParameterDirection.Input);
+            if (conf.Nivanal3.Equals(""))
+            {
+                p12.Value = null;
+                p13.Value = null;
+            }
+            
+            OracleParameter p14 = new OracleParameter("14", OracleDbType.Varchar2, null , ParameterDirection.Input);
+            OracleParameter p15 = new OracleParameter("15", OracleDbType.Varchar2, null , ParameterDirection.Input);
+            OracleParameter p16 = new OracleParameter("16", OracleDbType.Varchar2, null , ParameterDirection.Input);
+            OracleParameter p17 = new OracleParameter("17", OracleDbType.Varchar2, null , ParameterDirection.Input);
+            OracleParameter p18 = new OracleParameter("18", OracleDbType.Varchar2, conf.Concepto, ParameterDirection.Input);
+            OracleParameter p19 = new OracleParameter("19", OracleDbType.Decimal, Math.Abs(calculatedValue), ParameterDirection.Input);
+            OracleParameter p20 = new OracleParameter("20", OracleDbType.Varchar2, conf.Codtipdc, ParameterDirection.Input);
+            OracleParameter p21 = new OracleParameter("21", OracleDbType.Varchar2, liquidacion.Factura_dian, ParameterDirection.Input);
+            OracleParameter p22 = new OracleParameter("22", OracleDbType.Varchar2, conf.Codtipfu, ParameterDirection.Input);
+            OracleParameter p23 = new OracleParameter("23", OracleDbType.Varchar2, liquidacion.Factura_dian, ParameterDirection.Input);
+            OracleParameter p24 = new OracleParameter("24", OracleDbType.Varchar2, "ENERSINC", ParameterDirection.Input);
+            //OracleParameter p25 = new OracleParameter("25", OracleDbType.Date, Date.Now, ParameterDirection.Input);
+
+            OracleParameter p26 = new OracleParameter("26", OracleDbType.Decimal, ParameterDirection.Output);
+            OracleParameter p27 = new OracleParameter("27", OracleDbType.Varchar2, ParameterDirection.Output);
 
             List<OracleParameter> list = new List<OracleParameter>();
             list.Add(p1); list.Add(p2); list.Add(p3); list.Add(p4); list.Add(p5); list.Add(p6); list.Add(p7); list.Add(p8); list.Add(p9); list.Add(p10);
             list.Add(p11); list.Add(p12); list.Add(p13); list.Add(p14); list.Add(p15); list.Add(p16); list.Add(p17); list.Add(p18); list.Add(p19); list.Add(p20);
-            list.Add(p21); list.Add(p22); list.Add(p23); list.Add(p24); list.Add(p25); list.Add(p26); list.Add(p27); list.Add(p28); list.Add(p29); list.Add(p30);
-            list.Add(p31); list.Add(p32); list.Add(p33); list.Add(p34); list.Add(p35); list.Add(p36); list.Add(p37); list.Add(p38); list.Add(p39); list.Add(p40);
-            list.Add(p41); list.Add(p42); list.Add(p43); list.Add(p44); list.Add(p45); list.Add(p46);
-            list.Add(p47); list.Add(p48);
+            list.Add(p21); list.Add(p22); list.Add(p23); list.Add(p24); //list.Add(p25); 
+            list.Add(p26); list.Add(p27); 
 
             return list;
         }
@@ -587,7 +611,7 @@ namespace GpEnerSaf.Repositories
             }
             catch (Exception ex)
             {
-                throw new Exception(ex.Message + " -> " + ex.InnerException.Message);
+                //throw new Exception(ex.Message + " -> " + ex.InnerException.Message);
             }
             finally
             {
@@ -599,7 +623,7 @@ namespace GpEnerSaf.Repositories
         public List<Payment> GetPayments(string period, string prefixCompany)
         {
             List<Payment> paymentList = new List<Payment>();
-            prefixCompany = "ECOMMERCIAL S.A.S E.S.P";
+            //prefixCompany = "ECOMMERCIAL S.A.S E.S.P";
             string query =
                 " Select e.fecingre, NUMCONSE, e.CODINGRE, VALINGRE " +
                 " From   Sfts018t e, Sfts019t d, Sfts015t g " +
@@ -609,8 +633,8 @@ namespace GpEnerSaf.Repositories
                 " And d.codgring = g.codgring " +
                 " And d.codsbing = g.codsbing " +
                 " And g.gemerlin = 'S' " +
-                " And TO_CHAR(e.fecingre,'YYYYMM') = '" + period + "'" +
-                " and d.DESTERCE LIKE '%" + prefixCompany + "%'" +
+                " And TO_CHAR(e.fecingre,'YYYYMM') = '" + GetNextPeriod(period) + "'" +
+                " and SUBSTR(d.DESTERCE,1,9) = '" + prefixCompany.Substring(0,9) + "'" +
                 " order by e.fecingre, e.codingre ";
 
             IEnumerable<dynamic> items = QueryList(query);
@@ -621,10 +645,16 @@ namespace GpEnerSaf.Repositories
                 payment.FechaRecaudo = item.FECINGRE;
                 payment.Consecutive = item.NUMCONSE;
                 payment.PaymentValue= (double) item.VALINGRE;
+                payment.group_id = prefixCompany;
                 paymentList.Add(payment);
             }
 
             return paymentList;
+        }
+
+        private string GetNextPeriod(string period)
+        {
+            return (Int32.Parse(period) + 1).ToString();
         }
     }
 }

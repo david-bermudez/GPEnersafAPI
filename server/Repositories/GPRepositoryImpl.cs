@@ -13,6 +13,7 @@ using DocumentFormat.OpenXml.Spreadsheet;
 using System.Security.Claims;
 using Microsoft.Identity.Client;
 using project.Models.DTO;
+using System.Reflection;
 
 namespace GpEnerSaf.Repositories
 {
@@ -38,7 +39,9 @@ namespace GpEnerSaf.Repositories
 
         public void DeletePendingInvoiceLocal(string period, int status)
         {
-            List<GPLiquidacion> items = GetPendingInvoiceLocal(period, status);
+            List<GPLiquidacion> items = GetPendingInvoiceLocal(period, status)
+                .Where(s => s.Estado == status && s.Avance == null)
+                .ToList();
             context.GPLiquidacionEntity.RemoveRange(items);
             context.SaveChanges();
         }
@@ -68,9 +71,30 @@ namespace GpEnerSaf.Repositories
                 itemsLog.Add(itemLog);
             }
             NpgsqlBulkUploader uploader = new NpgsqlBulkUploader(context);
-            uploader.Insert(items, InsertConflictAction.DoNothing());
+            try
+            {
+                uploader.Update(items, GetPropertyToUpdate());
+                uploader.Insert(items, InsertConflictAction.DoNothing());
+                
+            } catch (Exception )
+            {
+            }
             uploader.Insert(itemsLog, InsertConflictAction.DoNothing());
             return items;
+        }
+
+        public List<PropertyInfo> GetPropertyToUpdate()
+        {
+            List<PropertyInfo> list = new List<PropertyInfo>();
+            foreach (var prop in typeof(GPLiquidacion).GetProperties())
+            {
+                if (!prop.Name.ToLower().Equals("ultimo_error") && !prop.Name.ToLower().Equals("avance") && !prop.Name.ToLower().Equals("estado"))
+                {
+                    list.Add(prop);
+                }
+            }
+
+            return list;
         }
 
         public GPLiquidacion CreateGPLiquidacionRow(dynamic row)
@@ -154,6 +178,7 @@ namespace GpEnerSaf.Repositories
             liquidacion.Factor_m = row.Factor_m;
             liquidacion.V_asgcv = row.V_asgcv;
             liquidacion.Estado = 1;
+            liquidacion.Avance = "NA";
             return liquidacion;
         }
 
@@ -277,14 +302,24 @@ namespace GpEnerSaf.Repositories
         {
             System.Data.Common.DbConnection connection = context.Database.GetDbConnection();
             double results = connection.Query<double>(sql).FirstOrDefault();
-            return results;
+            return Math.Round(results,0);
         }
 
         public void UpdateStatus(GPLiquidacion liq, int status, string errorMessage, DateTime dateTime, string username)
         {
+            //Set original Values To Configuration
+            context.ChangeTracker.Entries()
+                .Where(x => x.State == EntityState.Modified &&
+                            typeof(GPConfiguracion).IsAssignableFrom(x.Entity.GetType()))
+                .ToList()
+                .ForEach(entry => {
+                    entry.CurrentValues.SetValues(entry.OriginalValues);
+                });
+
             liq.Estado = status;
             liq.ultimo_error = errorMessage;
             context.GPLiquidacionEntity.Update(liq);
+            context.SaveChanges();
 
             GPLiquidacionLog log = CreateGPLiquidacionLogRow(liq, liq.Estado, errorMessage, dateTime, username);
             log.Estado = status;
@@ -315,19 +350,6 @@ namespace GpEnerSaf.Repositories
             return items;
         }
 
-        public double GetPreviousAmount(InvoiceDTO param)
-        {
-            GPSaldo saldo = context.GPSaldoEntity
-                .Where(s => s.Nombre_grupo == param.Description && s.Periodo == param.Period).FirstOrDefault();
-
-            if (saldo == null)
-            {
-                return 0;
-            } else
-            {
-                return saldo.Valor;
-            }
-        }
 
         public GPLiquidacionConcepto GetLiquidacionConceptoById(string fechafacturacion, int factura_id, string concepto)
         {
@@ -339,6 +361,27 @@ namespace GpEnerSaf.Repositories
             NpgsqlBulkUploader uploader = new NpgsqlBulkUploader(context);
             uploader.Insert(items, InsertConflictAction.DoNothing());
             uploader.Update(items);
+        }
+
+        public GPSaldo GetPaymentDifference(string period, string description, string code)
+        {
+            GPSaldo saldo = context.GPSaldoEntity
+                .Where(s => s.Nombre_grupo == description && s.Periodo == period && s.CodigoIngreso.Equals(code)).FirstOrDefault();
+
+            return saldo;
+        }
+
+        public void SaveSaldo(List<GPSaldo> saldoList)
+        { 
+            NpgsqlBulkUploader uploader = new NpgsqlBulkUploader(context);
+            try
+            {
+                uploader.Insert(saldoList, InsertConflictAction.DoNothing());
+                context.SaveChanges();
+            }
+            catch (Exception)
+            {
+            }
         }
     }
 }
