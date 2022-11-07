@@ -29,5 +29,6 @@ namespace GpEnerSaf.Services
         JObject SaveLoadedInvoices(InvoiceGroupDTO data);
         JObject GenerateReceivableAcconting(InvoiceGroupDTO data, string username);
         GPLiquidacion GetInvoiceLocal(InvoiceDTO param);
+        List<MenuDTO> GenerateMenuInvoices(InvoiceDTO param);
     }
 }

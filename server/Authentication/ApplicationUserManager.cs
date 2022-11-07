@@ -7,6 +7,7 @@ using Microsoft.Extensions.Options;
 using Novell.Directory.Ldap;
 
 using GpEnerSaf.Models;
+using GpEnerSaf.Repositories;
 
 namespace GpEnerSaf.Authentication
 {
@@ -43,6 +44,7 @@ namespace GpEnerSaf.Authentication
         public override Task<ApplicationUser> FindByNameAsync(string userName)
         {
             userName = userName.Replace($"@{options.Domain}", "", StringComparison.InvariantCultureIgnoreCase);
+
             return Task.FromResult(new ApplicationUser
             {
                 UserName = userName

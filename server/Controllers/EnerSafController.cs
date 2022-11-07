@@ -8,6 +8,7 @@ using GpEnerSaf.Models.BD;
 using System.Linq;
 using System.Security.Claims;
 using System;
+using GpEnerSaf.Repositories;
 
 namespace GpEnerSaf.Controllers
 {
@@ -130,6 +131,18 @@ namespace GpEnerSaf.Controllers
         public JObject GeneratePayableAcconting([FromBody] InvoiceGroupDTO data)
         {
             return _enerSafService.GenerateReceivableAcconting(data, GetLoggedUser());
+        }
+
+        [HttpPost(Name = "GenerateMenuInvoices")]
+        public List<MenuDTO> GenerateMenuInvoices([FromBody] JObject data)
+        {
+            InvoiceDTO param = new InvoiceDTO();
+            param.FechaFacturacion = data.GetValue("Fechafacturacion").ToString();
+            param.Version = data.GetValue("Version").ToString();
+            param.Factura_id = Int32.Parse(data.GetValue("Factura_id").ToString());
+            param.Username = GetLoggedUser();
+
+            return _enerSafService.GenerateMenuInvoices(param);
         }
 
         [HttpPost(Name = "GetVersion")]

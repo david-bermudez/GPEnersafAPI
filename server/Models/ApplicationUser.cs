@@ -12,7 +12,9 @@ namespace GpEnerSaf.Models
         [IgnoreDataMember]
         public override string PasswordHash { get; set; }
 
-        public string Name { get; set; } 
+        public string Name { get; set; }
+
+        public string Profile { get; set; }
     }
 }
 

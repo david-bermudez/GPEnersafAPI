@@ -19,6 +19,16 @@ namespace GpEnerSaf.Services
         private readonly IEnersincRepository _enersincECPRepository;
         private readonly ISAFIRORepository _safiroRepository;
 
+        private Dictionary<string, string> menuOptions = new Dictionary<string, string>
+        {
+            { "Provisionar", "CP" },
+            { "Contabilizar", "CN" },
+            { "Impuesto", "IM" },
+            { "Presupuesto Ingreso", "PPI" },
+            { "Presupuesto Egreso", "PPE" },
+            { "Reversion", "RV" }
+        };
+
         public EnersafServiceImpl(DbGpContext context, 
             IEnersincRepository enersincECPRepository,
             IGPRepository gpRepository,
@@ -248,23 +258,23 @@ namespace GpEnerSaf.Services
             }
             else if (progress.Equals("CP"))
             {
-                return 1;
+                return 2;
             } 
             else if (progress.Equals("CN"))
             {
-                return 2;
+                return 3;
             }
             else if (progress.Equals("IM"))
             {
-                return 3;
+                return 4;
             }
             else if (progress.Equals("PPI"))
             {
-                return 4;
+                return 5;
             }
             else if (progress.Equals("PPE"))
             {
-                return 5;
+                return 6;
             }
             else if (progress.Equals("VA"))
             {
@@ -419,7 +429,7 @@ namespace GpEnerSaf.Services
                     if (calculatedValue != 0)
                     {
                         ReplaceValues(conf, liq);
-                        conf.Numdocso = totalPayment.Consecutive;
+                        conf.Numdocso = totalPayment.Code;
                         processStatus = _safiroRepository.GeneratePayableAcconting(liq, conf, calculatedValue);
 
                         if (processStatus == null)
@@ -508,7 +518,8 @@ namespace GpEnerSaf.Services
                     invoice.FechaFacturacion = item.Fechafacturacion;
                     invoice.Version = item.Version;
 
-                    invoice.Description = "Factura: " + item.Factura_dian + " Version: " + item.Version + " - Frontera:" + item.Frontera + " - " + item.Municipio_nombre ;
+                    invoice.Description = "Factura: " + item.Factura_dian + " Version: " + item.Version + " - Frontera:"
+                        + item.Frontera + " - " + item.Municipio_nombre + " - " + item.V_neto_factura;
                     invoice.detail = new List<InvoiceItemDTO>();
 
                     List<GPConfiguracion> items = GetInvoiceConfigurationDetail(item.Cliente_nombre)
@@ -597,5 +608,40 @@ namespace GpEnerSaf.Services
             return GenerateResponse("Proceso finalizado correctamente");
         }
 
+        public List<MenuDTO> GenerateMenuInvoices(InvoiceDTO param)
+        {
+            string profile = _gpRepository.GetProfileUser(param.Username);
+
+            List<MenuDTO> menuList = new List<MenuDTO>();
+            GPLiquidacion liq = _gpRepository.GetSettlementById(param.FechaFacturacion, param.Version, param.Factura_id);
+            GetProgressNumber(liq.Avance);
+
+            foreach (string menuOption in menuOptions.Keys)
+            {
+                MenuDTO menu = new MenuDTO();
+                menu.Name = menuOption;
+                menu.Action = menuOptions[menuOption];
+                menu.IsActive = true;
+
+                if (GetProgressNumber(menu.Action) >= GetProgressNumber(liq.Avance))
+                {
+                    menu.IsActive = false;
+                } else
+                {
+                    menu.IsActive = true;
+                }
+
+                if (profile.Equals("MODIFY"))
+                {
+                    if (liq.Tipo_factura.Equals("Factura"))
+                    {
+                        menuList.Add(menu);
+                    }
+                }
+            }
+
+            return menuList;
+
+        }
     }
 }

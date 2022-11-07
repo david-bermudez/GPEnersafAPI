@@ -41,6 +41,8 @@ namespace GpEnerSaf.Data
                 .HasKey(a => new { a.Nombre_grupo, a.Periodo, a.CodigoFactura, a.CodigoIngreso });
             builder.Entity<GPLiquidacionConcepto>()
                 .HasKey(a => new { a.Fechafacturacion, a.Factura_id, a.Concepto });
+            builder.Entity<GPUsuario>()
+                .HasKey(a => new { a.Usuario });
         }
 
         //Entities
@@ -75,6 +77,12 @@ namespace GpEnerSaf.Data
         }
 
         public DbSet<GpEnerSaf.Models.BD.GPLiquidacionConcepto> GPLiquidacionConceptoEntity
+        {
+            get;
+            set;
+        }
+
+        public DbSet<GpEnerSaf.Models.BD.GPUsuario> GPUsuarioEntity
         {
             get;
             set;

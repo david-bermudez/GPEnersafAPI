@@ -1,4 +1,5 @@
 using GpEnerSaf.Models.BD;
+using Newtonsoft.Json.Linq;
 using project.Models.DTO;
 using System;
 using System.Collections.Generic;
@@ -22,5 +23,6 @@ namespace GpEnerSaf.Repositories
         void UpdateLiquidacionConceptoById(List<GPLiquidacionConcepto> items);
         GPSaldo GetPaymentDifference(string period, string description, string code);
         void SaveSaldo(List<GPSaldo> saldoList);
+        string GetProfileUser(string username);
     }
 }

@@ -14,6 +14,7 @@ using System.Security.Claims;
 using Microsoft.Identity.Client;
 using project.Models.DTO;
 using System.Reflection;
+using Newtonsoft.Json.Linq;
 
 namespace GpEnerSaf.Repositories
 {
@@ -112,7 +113,7 @@ namespace GpEnerSaf.Repositories
             liquidacion.Frontera = row.Frontera;
             liquidacion.Factura_dian = row.Factura_dian;
             liquidacion.Cliente_nombre = row.Cliente_nombre;
-            liquidacion.Municipio_id = row.Municipio_id;
+            liquidacion.Municipio_id = row.Municipio_id.ToString();
             liquidacion.Municipio_nombre = row.Municipio_nombre;
             liquidacion.Departamento_nombre = row.Departamento_nombre;
             liquidacion.Operador_sigla = row.Operador_sigla;
@@ -198,7 +199,7 @@ namespace GpEnerSaf.Repositories
             liquidacion.Frontera = row.Frontera;
             liquidacion.Factura_dian = row.Factura_dian;
             liquidacion.Cliente_nombre = row.Cliente_nombre;
-            liquidacion.Municipio_id = row.Municipio_id;
+            liquidacion.Municipio_id = row.Municipio_id.ToString();
             liquidacion.Municipio_nombre = row.Municipio_nombre;
             liquidacion.Departamento_nombre = row.Departamento_nombre;
             liquidacion.Operador_sigla = row.Operador_sigla;
@@ -382,6 +383,20 @@ namespace GpEnerSaf.Repositories
             catch (Exception)
             {
             }
+        }
+
+        public string GetProfileUser(string username)
+        {
+            username = username.Split("@")[0];
+            GPUsuario usuario = context.GPUsuarioEntity.Where(s => s.Usuario.Equals(username)).FirstOrDefault();
+            if (usuario == null)
+            {
+                return "";
+            } else
+            {
+                return usuario.Perfil;
+            }
+            
         }
     }
 }

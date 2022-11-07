@@ -13,6 +13,7 @@ using Newtonsoft.Json.Linq;
 
 using GpEnerSaf.Authentication;
 using GpEnerSaf.Models;
+using GpEnerSaf.Repositories;
 
 namespace GpEnerSaf.Controllers
 {
@@ -22,15 +23,16 @@ namespace GpEnerSaf.Controllers
         private readonly SignInManager<ApplicationUser> signInManager;
         private readonly UserManager<ApplicationUser> userManager;
         private readonly RoleManager<IdentityRole> roleManager;
-        
         private readonly IWebHostEnvironment env;
+        private IGPRepository _gpRepository;
 
-        public AuthController(SignInManager<ApplicationUser> signInManager, UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, IWebHostEnvironment env)
+        public AuthController(SignInManager<ApplicationUser> signInManager, UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, IWebHostEnvironment env, IGPRepository _gpRepository)
         {
             this.signInManager = signInManager;
             this.userManager = userManager;
             this.roleManager = roleManager;
             this.env = env;
+            this._gpRepository = _gpRepository;
         }
 
         private IActionResult Error(string message)
@@ -38,7 +40,7 @@ namespace GpEnerSaf.Controllers
             return BadRequest(new { error = new { message } });
         }
 
-        private IActionResult Jwt(IEnumerable<Claim> claims)
+        private IActionResult Jwt(IEnumerable<Claim> claims, string profile)
         {
             var handler = new JwtSecurityTokenHandler();
 
@@ -50,8 +52,9 @@ namespace GpEnerSaf.Controllers
                 Subject = new ClaimsIdentity(claims),
                 Expires = DateTime.UtcNow.Add(TokenProviderOptions.Expiration)
             });
-            
-            return Json(new { access_token = handler.WriteToken(token), expires_in = TokenProviderOptions.Expiration.TotalSeconds, username = new ClaimsIdentity(claims).Name });
+
+            string username = new ClaimsIdentity(claims).Name;
+            return Json(new { access_token = handler.WriteToken(token), expires_in = TokenProviderOptions.Expiration.TotalSeconds, username = username, profile = profile });
         }
 
         [HttpPost]
@@ -74,12 +77,20 @@ namespace GpEnerSaf.Controllers
             }
 
             var validPassword = await userManager.CheckPasswordAsync(user, password.ToObject<string>());
+
             if (!validPassword && !env.EnvironmentName.Equals("Development"))
             {
-                return Error("Invalid user name or password.");
+                return Error("Credenciales incorrectas.");
             }
+
             var principal = await signInManager.CreateUserPrincipalAsync(user);
-            return Jwt(principal.Claims);
+            string profile = _gpRepository.GetProfileUser(username.ToObject<string>());
+            if (profile.Equals(""))
+            {
+                return Error("Usted no tiene perfil de acceso al aplicativo.");
+            }
+
+            return Jwt(principal.Claims, profile);
         }
 
         private IActionResult IdentityError(IdentityResult result)
