@@ -20,5 +20,12 @@ namespace project.Models.DTO
         public double SuggestedValue { set; get; }
 
         public double PaidValue { set; get; }
+
+
+        public int Factura_id { set; get; }
+
+        public string FechaFacturacion { set; get; }
+
+        public string Version { set; get; }
     }
 }

@@ -74,9 +74,18 @@ namespace GpEnerSaf.Models.BD
         
         [Column("codcompr")]
         public string Codcompr { get; set; }
+
         [Column("codopepr")]
         public string Codopepr { get; set; }
+
         [Column("sort_order")]
         public int Sort_order { get; set; }
+
+        [Column("contrato")]
+        public string Contrato { get; set; }
+
+
+        [Column("activo")]
+        public int activo { get; set; }
     }
 }

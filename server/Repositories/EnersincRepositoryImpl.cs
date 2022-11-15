@@ -26,79 +26,79 @@ namespace GpEnerSaf.Repositories
 
             string query =
                 " SELECT " +
-                " fecha_facturacion AS \"Fechafacturacion\", " +
-                " 'tx0' AS \"Version\", " +
+                " fechafacturacion AS \"Fechafacturacion\", " +
+                " version AS \"Version\", " +
                 " factura_id AS \"Factura_id\", " +
                 " frontera AS \"Frontera\", " +
                 " factura_dian AS \"Factura_dian\", " +
-                " nombre_cliente AS \"Cliente_nombre\", " +
-                " municipio AS \"Municipio_id\", " +
-                " nombre_municipio AS \"Municipio_nombre\", " +
-                " nombre_departamento AS \"Departamento_nombre\", " +
-                " sigla_or AS \"Operador_sigla\", " +
-                " nivel_de_tension AS \"Nivel_tension\", " +
-                " cantidad_consumo_activa AS \"Q_activa\", " +
-                " cantidad_consumo_inductiva AS \"Q_inductiva\", " +
-                " cantidad_consumo_inductiva_penalizada AS \"Q_inductiva_pen\", " +
-                " cantidad_consumo_capacitiva AS \"Q_capacitiva\", " +
-                " cantidad_consumo_reactiva_penalizada AS \"Q_reactiva_pen\", " +
-                " precio_componente_g AS \"Gm_redo\", " +
-                " precio_componente_r AS \"Rm_redo\", " +
-                " precio_componente_c AS \"Cm_redo\", " +
-                " precio_componente_d AS \"Dm_redo\", " +
-                " precio_componente_o AS \"Om_redo\", " +
-                " precio_ponderado_componente_p AS \"Ppond_redo\", " +
-                " precio_ponderado_componente_t AS \"Tpond_redo\", " +
-                " valor_componente_g AS \"V_gm\", " +
-                " valor_componente_r AS \"V_rm\", " +
-                " valor_componente_c AS \"V_cm\", " +
-                " valor_componente_d AS \"V_dm\", " +
-                " valor_componente_o AS \"V_om\", " +
-                " valor_componente_p AS \"V_ppond\", " +
-                " valor_componente_t AS \"V_tpond\", " +
-                " valor_consumo_activa AS \"V_activa\", " +
-                " valor_consumo_reactiva_penalizada AS \"V_reactiva_pen\", " +
-                " valor_consumo_energia AS \"V_consumo_energia\", " +
-                " valor_componente_g_ajuste AS \"V_gm_ajuste\", " +
-                " valor_componente_r_ajuste AS \"V_rm_ajuste\", " +
-                " valor_componente_c_ajuste AS \"V_cm_ajuste\", " +
-                " valor_componente_d_ajuste AS \"V_dm_ajuste\", " +
-                " valor_componente_o_ajuste AS \"V_om_ajuste\", " +
-                " valor_componente_p_ajuste AS \"V_ppond_ajuste\", " +
-                " valor_componente_t_ajuste AS \"V_tpond_ajuste\", " +
-                " valor_consumo_activa_ajuste AS \"V_activa_ajuste\", " +
-                " valor_consumo_reactiva_penalizada_ajuste AS \"V_reactiva_pen_ajuste\", " +
-                " valor_consumo_energia_ajuste AS \"V_consumo_energia_ajuste\", " +
-                " valor_componente_g_ajustado AS \"V_gm_ajustado\", " +
-                " valor_componente_r_ajustado AS \"V_rm_ajustado\", " +
-                " valor_componente_c_ajustado AS \"V_cm_ajustado\", " +
-                " valor_componente_d_ajustado AS \"V_dm_ajustado\", " +
-                " valor_componente_o_ajustado AS \"V_om_ajustado\", " +
-                " valor_componente_p_ajustado AS \"V_ppond_ajustado\", " +
-                " valor_componente_t_ajustado AS \"V_tpond_ajustado\", " +
-                " valor_consumo_activa_ajustado AS \"V_activa_ajustado\", " +
-                " valor_consumo_reactiva_penalizada_ajustado AS \"V_reactiva_pen_ajustado\", " +
-                " valor_consumo_energia_ajustado AS \"V_consumo_energia_ajustado\", " +
-                " valor_contribucion AS \"V_contribucion\", " +
-                " valor_sobretasa AS \"V_sobretasa\", " +
-                " valor_ajuste_a_la_decena AS \"V_adcn\", " +
-                " valor_impuesto_alumbrado_publico AS \"V_iapb\", " +
-                " valor_impuesto_alumbrado_publico_ajuste AS \"V_iap_ajuste\", " +
-                " valor_retefuente_renta AS \"V_rrnt\", " +
-                " valor_autoretefuente_especial_renta AS \"V_arnt\", " +
-                " valor_retefuente_ica AS \"V_rfntica\", " +
-                " valor_auto_retefuente_ica AS \"V_afntica\", " +
-                " valor_retefuente_sobretasa_bomberil AS \"V_rrntbmb\", " +
-                " valor_recobros_total AS \"V_otros_total\", " +
-                " valor_neto_factura AS \"V_neto_factura\", " +
-                " valor_compensacion AS \"V_compensacion\", " +
-                " valor_autoretefuente_sobretasa_bomberil AS \"V_arntbmb\", " +
+                " cliente_nombre AS \"Cliente_nombre\", " +
+                " municipio_id AS \"Municipio_id\", " +
+                " municipio_nombre AS \"Municipio_nombre\", " +
+                " departamento_nombre AS \"Departamento_nombre\", " +
+                " operador_sigla AS \"Operador_sigla\", " +
+                " nivel_tension AS \"Nivel_tension\", " +
+                " q_activa AS \"Q_activa\", " +
+                " q_inductiva AS \"Q_inductiva\", " +
+                " q_inductiva AS \"Q_inductiva_pen\", " +
+                " q_capacitiva AS \"Q_capacitiva\", " +
+                " q_reactiva_pen AS \"Q_reactiva_pen\", " +
+                " gm_redo AS \"Gm_redo\", " +
+                " rm_redo AS \"Rm_redo\", " +
+                " cm_redo AS \"Cm_redo\", " +
+                " dm_redo AS \"Dm_redo\", " +
+                " om_redo AS \"Om_redo\", " +
+                " ppond_redo AS \"Ppond_redo\", " +
+                " tpond_redo AS \"Tpond_redo\", " +
+                " v_gm AS \"V_gm\", " +
+                " v_rm AS \"V_rm\", " +
+                " v_cm AS \"V_cm\", " +
+                " v_dm AS \"V_dm\", " +
+                " v_om AS \"V_om\", " +
+                " v_ppond AS \"V_ppond\", " +
+                " v_tpond AS \"V_tpond\", " +
+                " v_activa AS \"V_activa\", " +
+                " v_reactiva_pen AS \"V_reactiva_pen\", " +
+                " v_consumo_energia AS \"V_consumo_energia\", " +
+                " v_gm_ajuste AS \"V_gm_ajuste\", " +
+                " v_rm_ajuste AS \"V_rm_ajuste\", " +
+                " v_cm_ajuste AS \"V_cm_ajuste\", " +
+                " v_dm_ajuste AS \"V_dm_ajuste\", " +
+                " v_om_ajuste AS \"V_om_ajuste\", " +
+                " v_ppond_ajuste AS \"V_ppond_ajuste\", " +
+                " v_tpond_ajuste AS \"V_tpond_ajuste\", " +
+                " v_activa_ajuste AS \"V_activa_ajuste\", " +
+                " v_reactiva_pen_ajuste AS \"V_reactiva_pen_ajuste\", " +
+                " v_consumo_energia_ajuste AS \"V_consumo_energia_ajuste\", " +
+                " v_gm_ajustado AS \"V_gm_ajustado\", " +
+                " v_rm_ajustado AS \"V_rm_ajustado\", " +
+                " v_cm_ajustado AS \"V_cm_ajustado\", " +
+                " v_dm_ajustado AS \"V_dm_ajustado\", " +
+                " v_om_ajustado AS \"V_om_ajustado\", " +
+                " v_ppond_ajustado AS \"V_ppond_ajustado\", " +
+                " v_tpond_ajustado AS \"V_tpond_ajustado\", " +
+                " v_activa_ajustado AS \"V_activa_ajustado\", " +
+                " v_reactiva_pen_ajustado AS \"V_reactiva_pen_ajustado\", " +
+                " v_consumo_energia_ajustado AS \"V_consumo_energia_ajustado\", " +
+                " v_contribucion AS \"V_contribucion\", " +
+                " v_sobretasa AS \"V_sobretasa\", " +
+                " v_adcn AS \"V_adcn\", " +
+                " v_iapb AS \"V_iapb\", " +
+                " v_iap_ajuste AS \"V_iap_ajuste\", " +
+                " v_rrnt AS \"V_rrnt\", " +
+                " v_arnt AS \"V_arnt\", " +
+                " v_rfntica AS \"V_rfntica\", " +
+                " v_afntica AS \"V_afntica\", " +
+                " v_rrntbmb AS \"V_rrntbmb\", " +
+                " v_otros_total AS \"V_otros_total\", " +
+                " v_neto_factura AS \"V_neto_factura\", " +
+                " v_compensacion AS \"V_compensacion\", " +
+                " v_arntbmb AS \"V_arntbmb\", " +
                 " tipo_factura AS \"Tipo_factura\", " +
-                " valor_impuesto_seguridad AS \"V_sgcv\", " +
+                " v_sgcv AS \"V_sgcv\", " +
                 " factor_m AS \"Factor_m\", " +
-                " valor_impuesto_seguridad_ajuste AS \"V_asgcv\" " +
+                " v_asgcv AS \"V_asgcv\" " +
                 " FROM gecc.reporte_liquidacion_frts " +
-                " WHERE to_char(fecha_facturacion, 'yyyymm') = '" + period + "' AND factura_dian is not null ";
+                " WHERE to_char(fechafacturacion, 'yyyymm') = '" + period + "' AND factura_dian is not null ";
             return QueryList(query);
             
         }
@@ -108,7 +108,7 @@ namespace GpEnerSaf.Repositories
             string query =
                 " SELECT " +
                 " fechafacturacion AS Fechafacturacion, " +
-                " 'tx0' AS Version, " +
+                " version AS Version, " +
                 " factura_id AS Factura_id, " +
                 " frontera AS Frontera, " +
                 " factura_dian AS Factura_dian, " +
@@ -120,7 +120,7 @@ namespace GpEnerSaf.Repositories
                 " nivel_tension AS Nivel_tension, " +
                 " q_activa AS Q_activa, " +
                 " q_inductiva AS Q_inductiva, " +
-                " q_inductiva_pen AS Q_inductiva_pen, " +
+                " q_inductiva AS Q_inductiva_pen, " +
                 " q_capacitiva AS Q_capacitiva, " +
                 " q_reactiva_pen AS Q_reactiva_pen, " +
                 " gm_redo AS Gm_redo, " +

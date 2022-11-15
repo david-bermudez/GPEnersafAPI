@@ -1,21 +1,14 @@
 using Dapper;
-using DocumentFormat.OpenXml.Drawing.Charts;
-using GpEnerSaf.Models;
 using GpEnerSaf.Models.BD;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using Microsoft.OData.Edm;
-using Npgsql;
 using Oracle.ManagedDataAccess.Client;
 using project.Models.DTO;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Globalization;
-using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace GpEnerSaf.Repositories
 {
@@ -143,7 +136,10 @@ namespace GpEnerSaf.Repositories
             //REGISTRO DE MOVIMIENTOS CONTABLES PPTO
             if (confs.Tipo.Equals("RP"))
             {
-                result = generateInvoiceBudgetAccounting(liquidacion, confs, calculatedValue);
+                if (confs.Codcompr ==null || confs.Codcompr.Equals("") || confs.Codcompr.ToLower().Equals(liquidacion.Frontera.ToLower()))
+                {
+                    result = generateInvoiceBudgetAccounting(liquidacion, confs, calculatedValue);
+                }
             }
 
             return result;
@@ -381,13 +377,16 @@ namespace GpEnerSaf.Repositories
             string Factura_dian = liquidacion.Factura_dian.ToString();
             if (prefix.StartsWith("PROVISION"))
             {
-                DateTime previousMonth = DateTime.ParseExact(liquidacion.Fechafacturacion, "yyyyMMdd", CultureInfo.InvariantCulture);
+                //DateTime previousMonth = DateTime.ParseExact(liquidacion.Fechafacturacion, "yyyyMMdd", CultureInfo.InvariantCulture);
+                DateTime previousMonth = Date.Now;
                 Fechafacturacion = previousMonth.AddMonths(-1).Date.ToString("yyyyMM") + "30";
                 Factura_dian = "01";
             }
-
+            //Fechafacturacion = "20221105";
+            //Fechafacturacion = "20221012";
             if (conf.Tipo.Equals("RE"))
             {
+                //Fechafacturacion = "20221012";
                 Factura_dian = conf.Numdocso;
             }
             OracleParameter p1 = new OracleParameter("1", OracleDbType.Varchar2, conf.Codsucur, ParameterDirection.Input);
@@ -508,6 +507,9 @@ namespace GpEnerSaf.Repositories
         {
             string codoperPositive = "";
             string codoperNegative = "";
+            string Codcompr = conf.Codcompr;
+            string fecha = liquidacion.Fechafacturacion;
+
             if (conf.Tipo.Equals("PP"))
             {
                 codoperPositive = "518";
@@ -518,13 +520,21 @@ namespace GpEnerSaf.Repositories
                 codoperPositive = "518";
                 codoperNegative = "519";
             }
-
+            else if (conf.Tipo.Equals("PPI"))
+            {
+                Codcompr = conf.Contrato;
+                //fecha = "20221013";
+            }
+            else if (conf.Tipo.Equals("PPE"))
+            {
+                //fecha = "20221013";
+            }
 
             OracleParameter p1 = new OracleParameter("1", OracleDbType.Varchar2, "GC", ParameterDirection.Input);
             OracleParameter p2 = new OracleParameter("2", OracleDbType.Varchar2, conf.Tipo_asiento, ParameterDirection.Input);
-            OracleParameter p3 = new OracleParameter("3", OracleDbType.Varchar2, liquidacion.Fechafacturacion.Substring(0, 4), ParameterDirection.Input);
-            OracleParameter p4 = new OracleParameter("4", OracleDbType.Varchar2, liquidacion.Fechafacturacion, ParameterDirection.Input);
-            OracleParameter p5 = new OracleParameter("5", OracleDbType.Varchar2, conf.Codcompr, ParameterDirection.Input);
+            OracleParameter p3 = new OracleParameter("3", OracleDbType.Varchar2, fecha.Substring(0, 4), ParameterDirection.Input);
+            OracleParameter p4 = new OracleParameter("4", OracleDbType.Varchar2, fecha, ParameterDirection.Input);
+            OracleParameter p5 = new OracleParameter("5", OracleDbType.Varchar2, Codcompr, ParameterDirection.Input);
             OracleParameter p6 = new OracleParameter("6", OracleDbType.Varchar2, conf.Codopepr, ParameterDirection.Input);
             if (conf.Codopepr == null && calculatedValue > 0)
             {
@@ -542,7 +552,7 @@ namespace GpEnerSaf.Repositories
             OracleParameter p11 = new OracleParameter("11", OracleDbType.Varchar2, conf.Codniva2, ParameterDirection.Input);
             OracleParameter p12 = new OracleParameter("12", OracleDbType.Varchar2, conf.Nivanal3, ParameterDirection.Input);
             OracleParameter p13 = new OracleParameter("13", OracleDbType.Varchar2, conf.Codniva3, ParameterDirection.Input);
-            if (conf.Nivanal3.Equals(""))
+            if (conf.Nivanal3 != null && conf.Nivanal3.Equals(""))
             {
                 p12.Value = null;
                 p13.Value = null;
@@ -611,7 +621,7 @@ namespace GpEnerSaf.Repositories
             }
             catch (Exception ex)
             {
-                //throw new Exception(ex.Message + " -> " + ex.InnerException.Message);
+                throw new Exception(ex.Message + " -> " + ex.InnerException.Message);
             }
             finally
             {
@@ -623,7 +633,6 @@ namespace GpEnerSaf.Repositories
         public List<Payment> GetPayments(string period, string prefixCompany)
         {
             List<Payment> paymentList = new List<Payment>();
-            //prefixCompany = "ECOMMERCIAL S.A.S E.S.P";
             string query =
                 " Select e.fecingre, NUMCONSE, e.CODINGRE, VALINGRE " +
                 " From   Sfts018t e, Sfts019t d, Sfts015t g " +
@@ -654,7 +663,8 @@ namespace GpEnerSaf.Repositories
 
         private string GetNextPeriod(string period)
         {
-            return (Int32.Parse(period) + 1).ToString();
+            DateTime previousMonth = DateTime.ParseExact(period + "01", "yyyyMMdd", CultureInfo.InvariantCulture);
+            return previousMonth.AddMonths(1).Date.ToString("yyyyMM");
         }
     }
 }

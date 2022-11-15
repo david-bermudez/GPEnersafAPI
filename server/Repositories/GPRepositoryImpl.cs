@@ -284,6 +284,14 @@ namespace GpEnerSaf.Repositories
                 return null;
         }
 
+        public List<GPLiquidacion> GetSettlementByPeriod(string fechaFacturacion)
+        {
+            List<GPLiquidacion> items = context.GPLiquidacionEntity
+                .Where(s => s.Fechafacturacion.Substring(0,6) == fechaFacturacion 
+                ).ToList();
+            return items;
+        }
+
         public void DeleteSettlementById(string fechaFacturacion, string version, int factura_id)
         {
             GPLiquidacion itemLocal = GetSettlementById(fechaFacturacion, version, factura_id);
@@ -364,10 +372,10 @@ namespace GpEnerSaf.Repositories
             uploader.Update(items);
         }
 
-        public GPSaldo GetPaymentDifference(string period, string description, string code)
+        public List<GPSaldo> GetPaymentDifference(string code)
         {
-            GPSaldo saldo = context.GPSaldoEntity
-                .Where(s => s.Nombre_grupo == description && s.Periodo == period && s.CodigoIngreso.Equals(code)).FirstOrDefault();
+            List<GPSaldo> saldo = context.GPSaldoEntity
+                .Where(s => s.CodigoIngreso.Equals(code)).ToList();
 
             return saldo;
         }
@@ -395,6 +403,48 @@ namespace GpEnerSaf.Repositories
             } else
             {
                 return usuario.Perfil;
+            }
+            
+        }
+
+        public List<GPConfiguracion> ListConfiguration()
+        {
+            return context.GPConfiguracionEntity.Where( s => !s.Codigo.Equals("")).ToList();
+        }
+
+        public GPConfiguracion DeleteConfiguration(GPConfiguracion conf)
+        {
+            context.GPConfiguracionEntity.Remove(conf);
+            context.SaveChanges();
+            return conf;
+        }
+
+        public GPConfiguracion UpdateConfiguration(GPConfiguracion conf)
+        {
+            try
+            {
+                context.GPConfiguracionEntity.Update(conf);
+                context.SaveChanges();
+
+                return conf;
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
+        }
+
+        public GPConfiguracion CreateConfiguracion(GPConfiguracion conf)
+        {
+            try
+            {
+                context.GPConfiguracionEntity.Add(conf);
+                context.SaveChanges();
+
+                return conf;
+            } catch (Exception ex)
+            {
+                return null;
             }
             
         }

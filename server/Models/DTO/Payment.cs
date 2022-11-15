@@ -9,5 +9,6 @@ namespace project.Models.DTO
         public double PaymentValue { get; set; }
         public DateTime FechaRecaudo { get; set; }
         public string group_id { get; set; }
+        public string CodigoFactura { get; set; }
     }
 }

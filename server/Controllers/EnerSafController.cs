@@ -70,7 +70,7 @@ namespace GpEnerSaf.Controllers
             {
                 item.ultimo_error = "Factura sin inconsistencias";
             }
-            return _enerSafService.GenerateResponse(item.ultimo_error);
+            return _enerSafService.GenerateResponse(item.ultimo_error + " - Estado [" + EnersafServiceImpl.menuOptions.FirstOrDefault(x => x.Value == item.Avance).Key + "]");
         }
 
         [HttpPost(Name = "ValidatePendingInvoice")]
@@ -91,16 +91,9 @@ namespace GpEnerSaf.Controllers
         }
 
         [HttpPost(Name = "GenerateInvoiceAcconting")]
-        public JObject GenerateInvoiceAcconting([FromBody] JObject data)
+        public JObject GenerateInvoiceAcconting([FromBody] InvoiceGroupDTO data)
         {
-            InvoiceDTO param = new InvoiceDTO();
-            param.FechaFacturacion = data.GetValue("Fechafacturacion").ToString();
-            param.Version = data.GetValue("Version").ToString();
-            param.Factura_id = Int32.Parse(data.GetValue("Factura_id").ToString());
-            param.Interfase = data.GetValue("Interfase").ToString();
-            param.Username = GetLoggedUser();
-
-            return _enerSafService.GenerateInvoiceAcconting(param);
+            return _enerSafService.GenerateInvoiceAcconting(data);
         }
 
         [HttpPost(Name = "GetLoadedInvoiceByCompany")]
@@ -121,16 +114,16 @@ namespace GpEnerSaf.Controllers
         }
 
         [HttpPost(Name = "SaveLoadedInvoices")]
-        public JObject SaveLoadedInvoices([FromBody] InvoiceGroupDTO data)
+        public JObject SaveLoadedInvoices([FromBody] InvoiceDetailGroupDTO data)
         {
             _enerSafService.SaveLoadedInvoices(data);
             return _enerSafService.GenerateResponse("Datos guardados correctamente");
         }
 
         [HttpPost(Name = "GeneratePayableAcconting")]
-        public JObject GeneratePayableAcconting([FromBody] InvoiceGroupDTO data)
+        public JObject GeneratePayableAcconting([FromBody] InvoiceDetailGroupDTO data)
         {
-            return _enerSafService.GenerateReceivableAcconting(data, GetLoggedUser());
+            return _enerSafService.GeneratePayableAcconting(data, GetLoggedUser());
         }
 
         [HttpPost(Name = "GenerateMenuInvoices")]
@@ -161,6 +154,34 @@ namespace GpEnerSaf.Controllers
 
             return username;
         }
+
+        /**
+         * 
+         */
+        [HttpPost(Name = "ListConfiguration")]
+        public List<GPConfiguracion> ListConfiguration()
+        {
+            return _enerSafService.ListConfiguration();
+        }
+
+        [HttpPost(Name = "CreateConfiguration")]
+        public GPConfiguracion CreateConfiguration([FromBody] GPConfiguracion conf)
+        {
+            return _enerSafService.CreateConfiguracion(conf);
+        }
+
+        [HttpPost(Name = "UpdateConfiguration")]
+        public GPConfiguracion UpdateConfiguration([FromBody] GPConfiguracion conf)
+        {
+            return _enerSafService.UpdateConfiguration(conf);
+        }
+
+        [HttpPost(Name = "DeleteConfiguration")]
+        public GPConfiguracion DeleteConfiguration([FromBody] GPConfiguracion conf)
+        {
+            return _enerSafService.DeleteConfiguration(conf);
+        }
+
     }
 
 }

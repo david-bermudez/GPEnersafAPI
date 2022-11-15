@@ -13,7 +13,17 @@ namespace project.Models.DTO
         public List<InvoiceDTO> Invoices { get; set; }
         public string Period { set; get; }
         public string GroupName { set; get; }
+        public string Username { get; set; }
 
     }
-            
+
+    public class InvoiceDetailGroupDTO
+    {
+        public string GroupName { set; get; }
+
+        public List<Payment> Payments { get; set; }
+        public List<InvoiceItemDTO> Detail { get; set; }
+
+    }
+
 }

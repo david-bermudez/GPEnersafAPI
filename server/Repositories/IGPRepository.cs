@@ -13,6 +13,7 @@ namespace GpEnerSaf.Repositories
         List<GPLiquidacion> GetPendingInvoiceLocal(string period, int status);
         void DeletePendingInvoiceLocal(string period, int status);
         GPLiquidacion GetSettlementById(string fechaFacturacion, string version, int factura_id);
+        List<GPLiquidacion> GetSettlementByPeriod(string fechaFacturacion);
         void DeleteSettlementById(string fechaFacturacion, string version, int factura_id);
         double GetCalculatedValue(string sql);
         void UpdateStatus(GPLiquidacion liq, int status, string errorMessage, DateTime dateTime, string username);
@@ -21,8 +22,12 @@ namespace GpEnerSaf.Repositories
         public List<GPLiquidacion> GetPendingInvoiceLocalByName(string period, int status, string name);
         GPLiquidacionConcepto GetLiquidacionConceptoById(string fechafacturacion, int factura_id, string concepto);
         void UpdateLiquidacionConceptoById(List<GPLiquidacionConcepto> items);
-        GPSaldo GetPaymentDifference(string period, string description, string code);
+        List<GPSaldo> GetPaymentDifference(string code);
         void SaveSaldo(List<GPSaldo> saldoList);
         string GetProfileUser(string username);
+        List<GPConfiguracion> ListConfiguration();
+        GPConfiguracion DeleteConfiguration(GPConfiguracion conf);
+        GPConfiguracion UpdateConfiguration(GPConfiguracion conf);
+        GPConfiguracion CreateConfiguracion(GPConfiguracion conf);
     }
 }
